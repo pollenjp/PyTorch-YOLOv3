@@ -18,6 +18,8 @@ from torchvision import transforms
 from torch.autograd import Variable
 import torch.optim as optim
 
+import tensorboardX
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--epochs", type=int, default=30, help="number of epochs")
 parser.add_argument("--image_folder", type=str, default="data/samples", help="path to dataset")
@@ -44,6 +46,9 @@ os.makedirs("output", exist_ok=True)
 os.makedirs("checkpoints", exist_ok=True)
 
 classes = load_classes(opt.class_path)
+batch_size = opt.batch_size
+
+writer = tensorboardX.SummaryWriter()
 
 # Get data configuration
 data_config = parse_data_config(opt.data_config_path)
@@ -75,7 +80,7 @@ Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 
 optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()))
 
-for epoch in range(opt.epochs):
+for epoch_i in range(opt.epochs):
     for batch_i, (_, imgs, targets) in enumerate(dataloader):
         imgs = Variable(imgs.type(Tensor))
         targets = Variable(targets.type(Tensor), requires_grad=False)
@@ -90,7 +95,7 @@ for epoch in range(opt.epochs):
         print(
             "[Epoch %d/%d, Batch %d/%d] [Losses: x %f, y %f, w %f, h %f, conf %f, cls %f, total %f, recall: %.5f, precision: %.5f]"
             % (
-                epoch,
+                epoch_i,
                 opt.epochs,
                 batch_i,
                 len(dataloader),
@@ -105,8 +110,56 @@ for epoch in range(opt.epochs):
                 model.losses["precision"],
             )
         )
+        #===================================================================
+        # LOG (BATCH)
+        #===================================================================
+        writer.add_scalar(tag='batch/loss/x', scalar_value=model.losses["x"],
+                            global_step=(epoch_i + 1) * batch_size + batch_i,
+                            walltime=None)
+        writer.add_scalar(tag="batch/loss/y", scalar_value=model.losses["y"],
+                            global_step=(epoch_i + 1) * batch_i,
+                            walltime=None)
+        writer.add_scalar(tag="batch/loss/w", scalar_value=model.losses["w"],
+                            global_step=(epoch_i + 1) * batch_size + batch_i,
+                            walltime=None)
+        writer.add_scalar(tag="batch/loss/h", scalar_value=model.losses["h"],
+                            global_step=(epoch_i + 1) * batch_size + batch_i,
+                            walltime=None)
+        writer.add_scalar(tag="batch/loss/conf", scalar_value=model.losses["conf"],
+                            global_step=(epoch_i + 1) * batch_size + batch_i,
+                            walltime=None)
+        writer.add_scalar(tag="batch/loss/cls", scalar_value=model.losses["cls"],
+                            global_step=(epoch_i + 1) * batch_size + batch_i,
+                            walltime=None)
 
         model.seen += imgs.size(0)
 
-    if epoch % opt.checkpoint_interval == 0:
+    #===================================================================
+    # LOG (EPOCH)
+    #===================================================================
+    writer.add_scalar(tag='eopch/loss/total_loss', scalar_value=total_loss,
+                        global_step=(epoch_i + 1),
+                        walltime=None)
+    writer.add_scalar(tag="eopch/loss/loss_xy", scalar_value=loss_xy,
+                        global_step=(epoch_i + 1),
+                        walltime=None)
+    writer.add_scalar(tag="eopch/loss/loss_wh", scalar_value=loss_wh,
+                        global_step=(epoch_i + 1),
+                        walltime=None)
+    writer.add_scalar(tag="eopch/loss/loss_conf", scalar_value=loss_conf,
+                        global_step=(epoch_i + 1),
+                        walltime=None)
+    writer.add_scalar(tag="eopch/loss/loss_class", scalar_value=loss_class,
+                        global_step=(epoch_i + 1),
+                        walltime=None)
+    writer.add_scalar(tag="eopch/loss/recall",
+                        scalar_value=model.losses["recall"],
+                        global_step=(epoch_i + 1),
+                        walltime=None)
+    writer.add_scalar(tag="eopch/loss/precision",
+                        scalar_value=model.losses["precision"],
+                        global_step=(epoch_i + 1),
+                        walltime=None)
+
+    if epoch_i % opt.checkpoint_interval == 0:
         model.save_weights("%s/%d.weights" % (opt.checkpoint_dir, epoch))
