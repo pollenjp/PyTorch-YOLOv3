@@ -80,6 +80,9 @@ Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 
 optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()))
 
+num_batches = len(dataloader)
+print(num_batches)
+
 for epoch_i in range(opt.epochs):
     for batch_i, (_, imgs, targets) in enumerate(dataloader):
         imgs = Variable(imgs.type(Tensor))
@@ -114,22 +117,22 @@ for epoch_i in range(opt.epochs):
         # LOG (BATCH)
         #===================================================================
         writer.add_scalar(tag='batch/loss/x', scalar_value=model.losses["x"],
-                            global_step=(epoch_i + 1) * batch_size + batch_i,
+                            global_step=epoch_i * num_batches + batch_i,
                             walltime=None)
         writer.add_scalar(tag="batch/loss/y", scalar_value=model.losses["y"],
-                            global_step=(epoch_i + 1) * batch_i,
+                            global_step=epoch_i * num_batches + batch_i,
                             walltime=None)
         writer.add_scalar(tag="batch/loss/w", scalar_value=model.losses["w"],
-                            global_step=(epoch_i + 1) * batch_size + batch_i,
+                            global_step=epoch_i * num_batches + batch_i,
                             walltime=None)
         writer.add_scalar(tag="batch/loss/h", scalar_value=model.losses["h"],
-                            global_step=(epoch_i + 1) * batch_size + batch_i,
+                            global_step=epoch_i * num_batches + batch_i,
                             walltime=None)
         writer.add_scalar(tag="batch/loss/conf", scalar_value=model.losses["conf"],
-                            global_step=(epoch_i + 1) * batch_size + batch_i,
+                            global_step=epoch_i * num_batches + batch_i,
                             walltime=None)
         writer.add_scalar(tag="batch/loss/cls", scalar_value=model.losses["cls"],
-                            global_step=(epoch_i + 1) * batch_size + batch_i,
+                            global_step=epoch_i * num_batches + batch_i,
                             walltime=None)
 
         model.seen += imgs.size(0)
@@ -137,28 +140,23 @@ for epoch_i in range(opt.epochs):
     #===================================================================
     # LOG (EPOCH)
     #===================================================================
-    writer.add_scalar(tag='eopch/loss/total_loss', scalar_value=total_loss,
-                        global_step=(epoch_i + 1),
+    writer.add_scalar(tag='epoch/loss/x', scalar_value=model.losses["x"],
+                        global_step=epoch_i+1,
                         walltime=None)
-    writer.add_scalar(tag="eopch/loss/loss_xy", scalar_value=loss_xy,
-                        global_step=(epoch_i + 1),
+    writer.add_scalar(tag="epoch/loss/y", scalar_value=model.losses["y"],
+                        global_step=epoch_i+1,
                         walltime=None)
-    writer.add_scalar(tag="eopch/loss/loss_wh", scalar_value=loss_wh,
-                        global_step=(epoch_i + 1),
+    writer.add_scalar(tag="epoch/loss/w", scalar_value=model.losses["w"],
+                        global_step=epoch_i+1,
                         walltime=None)
-    writer.add_scalar(tag="eopch/loss/loss_conf", scalar_value=loss_conf,
-                        global_step=(epoch_i + 1),
+    writer.add_scalar(tag="epoch/loss/h", scalar_value=model.losses["h"],
+                        global_step=epoch_i+1,
                         walltime=None)
-    writer.add_scalar(tag="eopch/loss/loss_class", scalar_value=loss_class,
-                        global_step=(epoch_i + 1),
+    writer.add_scalar(tag="epoch/loss/conf", scalar_value=model.losses["conf"],
+                        global_step=epoch_i+1,
                         walltime=None)
-    writer.add_scalar(tag="eopch/loss/recall",
-                        scalar_value=model.losses["recall"],
-                        global_step=(epoch_i + 1),
-                        walltime=None)
-    writer.add_scalar(tag="eopch/loss/precision",
-                        scalar_value=model.losses["precision"],
-                        global_step=(epoch_i + 1),
+    writer.add_scalar(tag="epoch/loss/cls", scalar_value=model.losses["cls"],
+                        global_step=epoch_i+1,
                         walltime=None)
 
     if epoch_i % opt.checkpoint_interval == 0:
